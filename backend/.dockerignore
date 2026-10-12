@@ -17,3 +17,4 @@ wheels/
 Dockerfile
 .dockerignore
 .gitignore
+README.md
