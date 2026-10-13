@@ -6,6 +6,7 @@ from rest_framework.response import Response
 
 from .serializers import (
     AccountCreateSerializer,
+    AccountDestroySerializer,
     AccountPasswordChangeSerializer,
     AccountSerializer,
     AccountUpdateSerializer,
@@ -43,3 +44,19 @@ class AccountPasswordChangeView(GenericAPIView):
         serializer.save()
 
         return Response({'detail': 'Password successfully changed'}, status=status.HTTP_200_OK)
+
+
+class AccountDestroyView(GenericAPIView):
+    """
+    View for deleting account.
+    """
+
+    serializer_class = AccountDestroySerializer
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, *args, **kwargs):
+        user = self.request.user
+        serializer = self.get_serializer(user, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
