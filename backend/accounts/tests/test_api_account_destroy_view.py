@@ -3,9 +3,12 @@ from unittest import mock
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.urls import reverse
+from django_dynamic_fixture import G
 from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework.throttling import ScopedRateThrottle
+
+from mail.models import Label
 
 User = get_user_model()
 
@@ -30,6 +33,18 @@ class APIAccountDestroyViewTest(APITestCase):
         # === Assert ===
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(User.objects.filter(pk=self.user.pk).exists())
+
+    def test_it_destroys_labels(self):
+        # === Arrange ===
+        system_label = G(Label, user=self.user, is_system=True)
+        nonsystem_label = G(Label, user=self.user, is_system=False)
+
+        # === Act ===
+        response = self.client.post(self.url, data=self.request_data)
+
+        # === Assert ===
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Label.objects.filter(pk__in=[system_label.pk, nonsystem_label.pk]).exists())
 
     def test_it_returns_error_if_current_password_is_incorrect(self):
         # === Arrange ===

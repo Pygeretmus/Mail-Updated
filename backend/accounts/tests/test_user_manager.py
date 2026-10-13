@@ -3,6 +3,8 @@ from django.db import IntegrityError, transaction
 from django.test import TestCase
 from django_dynamic_fixture import G
 
+from mail.constants import SYSTEM_LABELS
+
 User = get_user_model()
 
 
@@ -31,6 +33,22 @@ class UserManagerCreateUserTest(TestCase):
         self.assertTrue(user.is_active)
         self.assertFalse(user.is_staff)
         self.assertFalse(user.is_superuser)
+
+    def test_it_creates_system_labels(self):
+        # === Act ===
+        user = User.objects.create_user(
+            email=self.email,
+            password=self.password,
+            first_name=self.first_name,
+            last_name=self.last_name,
+        )
+
+        # === Assert ===
+        self.assertFalse(user.labels.filter(is_system=False).exists())
+        self.assertEqual(
+            set(user.labels.filter(is_system=True).values_list('name', flat=True)),
+            set(SYSTEM_LABELS),
+        )
 
     def test_it_hashes_password(self):
         # === Act ===
@@ -106,6 +124,22 @@ class UserManagerCreateSuperuserTest(TestCase):
         self.assertTrue(user.is_staff)
         self.assertTrue(user.is_superuser)
         self.assertTrue(user.check_password(self.password))
+
+    def test_it_creates_system_labels(self):
+        # === Act ===
+        user = User.objects.create_superuser(
+            email=self.email,
+            password=self.password,
+            first_name=self.first_name,
+            last_name=self.last_name,
+        )
+
+        # === Assert ===
+        self.assertFalse(user.labels.filter(is_system=False).exists())
+        self.assertEqual(
+            set(user.labels.filter(is_system=True).values_list('name', flat=True)),
+            set(SYSTEM_LABELS),
+        )
 
     def test_it_hashes_password(self):
         # === Act ===

@@ -8,6 +8,8 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework.throttling import ScopedRateThrottle
 
+from mail.constants import SYSTEM_LABELS
+
 User = get_user_model()
 
 
@@ -53,6 +55,19 @@ class APIAccountCreateViewTest(APITestCase):
         # === Assert ===
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(User.objects.filter(email='john@example.com').exists())
+
+    def test_it_creates_system_labels(self):
+        # === Act ===
+        response = self.client.post(self.url, data=self.request_data)
+
+        # === Assert ===
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        user = User.objects.get(email=self.request_data['email'])
+        self.assertFalse(user.labels.filter(is_system=False).exists())
+        self.assertEqual(
+            set(user.labels.filter(is_system=True).values_list('name', flat=True)),
+            set(SYSTEM_LABELS),
+        )
 
     def test_it_hashes_password(self):
         # === Act ===
