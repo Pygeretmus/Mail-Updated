@@ -35,7 +35,7 @@ THIRD_PARTY_APPS = [
     'drf_spectacular',
 ]
 
-PROJECT_APPS = ['accounts']
+PROJECT_APPS = ['accounts', 'mail']
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + PROJECT_APPS
 
