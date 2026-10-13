@@ -83,6 +83,8 @@ Base path `/api`. All endpoints except registration and login need `Authorizatio
 | `GET` `PUT` `PATCH` | `/accounts/me/`                 | Read or update the profile (updates need `current_password`)  |
 | `PUT`               | `/accounts/password/`           | Change password                                               |
 | `POST`              | `/accounts/destroy/`            | Delete the account (needs `current_password`)                 |
+| `GET` `POST`        | `/labels/`                      | List or create labels                                         |
+| `PATCH` `DELETE`    | `/labels/{id}/`                 | Rename or delete a custom label (system labels are read-only) |
 
 ## Development
 
