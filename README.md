@@ -86,6 +86,9 @@ Base path `/api`. All endpoints except registration and login need `Authorizatio
 | `GET` `POST`        | `/labels/`                      | List or create labels                                         |
 | `PATCH` `DELETE`    | `/labels/{id}/`                 | Rename or delete a custom label (system labels are read-only) |
 | `POST`              | `/messages/compose/`            | Send a message (`to`, `cc`, `bcc`, `subject`, `body`)         |
+| `GET`               | `/mailbox/?label=inbox`         | List a mailbox by label name (paginated)                      |
+| `GET`               | `/mailbox/?deleted=true`        | List the trash                                                |
+| `GET`               | `/mailbox/{id}/`                | One message with recipients, as seen by you                   |
 
 ## Development
 

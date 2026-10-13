@@ -103,3 +103,22 @@ class MailboxEntryDetailSerializer(CustomModelSerializer):
         model = MailboxEntry
         fields = ('id', 'message', 'role', 'is_read', 'deleted_at', 'labels')
         read_only_fields = ('message', 'role', 'is_read', 'deleted_at')
+
+
+class MessagePreviewSerializer(CustomModelSerializer):
+    sender = LowerEmailField(source='sender.email', allow_null=True, read_only=True)
+
+    class Meta:
+        model = Message
+        fields = ('id', 'thread', 'sender', 'subject', 'created_at')
+        read_only_fields = fields
+
+
+class MailboxEntryListSerializer(CustomModelSerializer):
+    message = MessagePreviewSerializer(read_only=True)
+    labels = LabelSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = MailboxEntry
+        fields = ('id', 'message', 'role', 'is_read', 'deleted_at', 'labels')
+        read_only_fields = ('message', 'role', 'is_read', 'deleted_at')
