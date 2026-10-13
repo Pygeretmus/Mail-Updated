@@ -12,7 +12,7 @@ It is a ground-up rewrite of an earlier, simpler version, with a proper data mod
 | -------- | ----------------------------------------------------------------------------- |
 | API      | Python 3.13, Django 6, Django REST Framework, SimpleJWT, drf-spectacular      |
 | Data     | PostgreSQL 17                                                                 |
-| Async    | Celery (worker + beat) with Redis;                                            |
+| Async    | Celery (worker + beat) with Redis; Redis also backs the cache and rate limits |
 | Client   | React 19, TypeScript, Vite (no UI or state libraries)                         |
 | Delivery | Docker Compose, nginx reverse proxy, gunicorn                                 |
 | Quality  | Django test runner, Ruff, ESLint, GitHub Actions                              |

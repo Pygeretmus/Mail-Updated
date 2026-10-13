@@ -1,8 +1,11 @@
+from unittest import mock
+
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
+from rest_framework.throttling import ScopedRateThrottle
 
 User = get_user_model()
 
@@ -179,3 +182,50 @@ class APIAccountPasswordChangeViewTest(APITestCase):
         )
         self.user.refresh_from_db()
         self.assertTrue(self.user.check_password(self.password))
+
+    @mock.patch.dict(ScopedRateThrottle.THROTTLE_RATES, {'password_check': '2/min'})
+    def test_it_returns_error_if_success_requests_too_frequent(self):
+        # === Act ===
+        for _ in range(3):
+            response = self.client.put(self.url, data=self.request_data)
+
+        # === Assert ===
+        self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+        self.assertEqual(
+            response.json(),
+            {
+                'status': 429,
+                'errors': [
+                    {
+                        'param': None,
+                        'message': 'Request was throttled. Expected available in 60 seconds.',
+                        'code': 'throttled',
+                    }
+                ],
+            },
+        )
+
+    @mock.patch.dict(ScopedRateThrottle.THROTTLE_RATES, {'password_check': '2/min'})
+    def test_it_returns_error_if_error_requests_too_frequent(self):
+        # === Arrange ===
+        self.request_data['new_password'] = '123'
+
+        # === Act ===
+        for _ in range(3):
+            response = self.client.post(self.url, data=self.request_data)
+
+        # === Assert ===
+        self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+        self.assertEqual(
+            response.json(),
+            {
+                'status': 429,
+                'errors': [
+                    {
+                        'param': None,
+                        'message': 'Request was throttled. Expected available in 60 seconds.',
+                        'code': 'throttled',
+                    }
+                ],
+            },
+        )

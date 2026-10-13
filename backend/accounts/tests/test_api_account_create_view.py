@@ -1,9 +1,12 @@
+from unittest import mock
+
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.urls import reverse
 from django_dynamic_fixture import G
 from rest_framework import status
 from rest_framework.test import APITestCase
+from rest_framework.throttling import ScopedRateThrottle
 
 User = get_user_model()
 
@@ -186,3 +189,52 @@ class APIAccountCreateViewTest(APITestCase):
                 )
                 self.assertEqual(User.objects.count(), 0)
                 self.request_data[field] = data
+
+    @mock.patch.dict(ScopedRateThrottle.THROTTLE_RATES, {'register': '2/min'})
+    def test_it_returns_error_if_success_requests_too_frequent(self):
+
+        # === Act ===
+        for _ in range(3):
+            self.request_data['email'] = self.request_data['email'] + '1'
+            response = self.client.post(self.url, data=self.request_data)
+
+        # === Assert ===
+        self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+        self.assertEqual(
+            response.json(),
+            {
+                'status': 429,
+                'errors': [
+                    {
+                        'param': None,
+                        'message': 'Request was throttled. Expected available in 60 seconds.',
+                        'code': 'throttled',
+                    }
+                ],
+            },
+        )
+
+    @mock.patch.dict(ScopedRateThrottle.THROTTLE_RATES, {'register': '2/min'})
+    def test_it_returns_error_if_error_requests_too_frequent(self):
+        # === Arrange ===
+        self.request_data['password'] = '123'
+
+        # === Act ===
+        for _ in range(3):
+            response = self.client.post(self.url, data=self.request_data)
+
+        # === Assert ===
+        self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+        self.assertEqual(
+            response.json(),
+            {
+                'status': 429,
+                'errors': [
+                    {
+                        'param': None,
+                        'message': 'Request was throttled. Expected available in 60 seconds.',
+                        'code': 'throttled',
+                    }
+                ],
+            },
+        )
