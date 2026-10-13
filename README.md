@@ -85,6 +85,7 @@ Base path `/api`. All endpoints except registration and login need `Authorizatio
 | `POST`              | `/accounts/destroy/`            | Delete the account (needs `current_password`)                 |
 | `GET` `POST`        | `/labels/`                      | List or create labels                                         |
 | `PATCH` `DELETE`    | `/labels/{id}/`                 | Rename or delete a custom label (system labels are read-only) |
+| `POST`              | `/messages/compose/`            | Send a message (`to`, `cc`, `bcc`, `subject`, `body`)         |
 
 ## Development
 
