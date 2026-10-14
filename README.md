@@ -94,6 +94,7 @@ Base path `/api`. All endpoints except registration and login need `Authorizatio
 | `POST`              | `/mailbox/{id}/restore_entry/`  | Restore from trash                                            |
 | `DELETE`            | `/mailbox/{id}/erase_entry/`    | Delete permanently (trash only)                               |
 | `POST`              | `/messages/{id}/reply/`         | Reply, or reply to all with `reply_all: true`                 |
+| `GET`               | `/messages/thread/{thread_id}/` | The conversation, oldest first                                |
 
 ## Development
 

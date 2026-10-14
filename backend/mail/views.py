@@ -5,7 +5,7 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.generics import GenericAPIView
+from rest_framework.generics import GenericAPIView, ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle, UserRateThrottle
@@ -192,4 +192,23 @@ class MessageReplyView(GenericAPIView):
         return Response(
             MailboxEntryDetailSerializer(entry, context={'request': request}).data,
             status=status.HTTP_201_CREATED,
+        )
+
+
+class ThreadMessagesView(ListAPIView):
+    """All messages in a thread, from the requesting user's point of view"""
+
+    serializer_class = MailboxEntryDetailSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        # Turn off swagger warning
+        if getattr(self, 'swagger_fake_view', False):
+            return MailboxEntry.objects.none()
+        return (
+            MailboxEntry.objects.filter(user=self.request.user, message__thread_id=self.kwargs['thread_id'])
+            .select_related('message', 'message__sender')
+            .prefetch_related('labels')
+            .order_by('message__created_at')
+            .with_recipients()
         )
