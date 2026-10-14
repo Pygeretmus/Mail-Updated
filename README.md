@@ -90,6 +90,9 @@ Base path `/api`. All endpoints except registration and login need `Authorizatio
 | `GET`               | `/mailbox/?deleted=true`        | List the trash                                                |
 | `GET`               | `/mailbox/{id}/`                | One message with recipients, as seen by you                   |
 | `PATCH`             | `/mailbox/{id}/update_state/`   | Set `is_read` and/or `label_ids`                              |
+| `POST`              | `/mailbox/{id}/delete_entry/`   | Move to trash                                                 |
+| `POST`              | `/mailbox/{id}/restore_entry/`  | Restore from trash                                            |
+| `DELETE`            | `/mailbox/{id}/erase_entry/`    | Delete permanently (trash only)                               |
 
 ## Development
 

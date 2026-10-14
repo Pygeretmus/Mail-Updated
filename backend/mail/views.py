@@ -1,3 +1,4 @@
+from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework import status
@@ -87,6 +88,21 @@ class MessageComposeView(GenericAPIView):
         request=MailboxEntryUpdateSerializer,
         responses=MailboxEntryDetailSerializer,
     ),
+    delete_entry=extend_schema(
+        summary='Soft-delete (move to trash)',
+        request=None,
+        responses={204: None},
+    ),
+    restore_entry=extend_schema(
+        summary='Restore from trash',
+        request=None,
+        responses=MailboxEntryDetailSerializer,
+    ),
+    erase_entry=extend_schema(
+        summary='Permanently delete (trash only)',
+        request=None,
+        responses={204: None},
+    ),
 )
 class MailboxViewSet(ReadOnlyModelViewSet):
     permission_classes = (IsAuthenticated,)
@@ -111,6 +127,11 @@ class MailboxViewSet(ReadOnlyModelViewSet):
                 qs = qs.filter(labels__name__iexact=label)
             return qs
 
+        if self.action in ('restore_entry', 'erase_entry'):
+            qs = qs.filter(deleted_at__isnull=False)
+        elif self.action == 'delete_entry':
+            qs = qs.filter(deleted_at__isnull=True)
+
         return qs.with_recipients()
 
     def get_serializer_class(self):
@@ -125,3 +146,23 @@ class MailboxViewSet(ReadOnlyModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(MailboxEntryDetailSerializer(entry, context={'request': request}).data)
+
+    @action(detail=True, methods=['post'])
+    def delete_entry(self, request, pk=None):
+        entry = self.get_object()
+        entry.deleted_at = timezone.now()
+        entry.save(update_fields=['deleted_at'])
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=['post'])
+    def restore_entry(self, request, pk=None):
+        entry = self.get_object()
+        entry.deleted_at = None
+        entry.save(update_fields=['deleted_at'])
+        return Response(MailboxEntryDetailSerializer(entry, context={'request': request}).data)
+
+    @action(detail=True, methods=['delete'])
+    def erase_entry(self, request, pk=None):
+        entry = self.get_object()
+        entry.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
