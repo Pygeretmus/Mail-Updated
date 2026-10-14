@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from .views import LabelViewSet, MailboxViewSet, MessageComposeView
+from .views import LabelViewSet, MailboxViewSet, MessageComposeView, MessageReplyView
 
 app_name = 'mail'
 
@@ -11,4 +11,5 @@ router.register('mailbox', MailboxViewSet, basename='mailbox')
 
 urlpatterns = router.urls + [
     path('messages/compose/', MessageComposeView.as_view(), name='message-compose'),
+    path('messages/<int:pk>/reply/', MessageReplyView.as_view(), name='message-reply'),
 ]

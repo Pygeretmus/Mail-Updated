@@ -6,7 +6,7 @@ from configuration.serializers import CustomModelSerializer, LowerEmailField
 
 from .constants import RESERVED_LABEL_NAMES
 from .models import Label, MailboxEntry, Message
-from .services import send_message
+from .services import build_reply_recipients, send_message
 
 User = get_user_model()
 
@@ -135,3 +135,30 @@ class MailboxEntryUpdateSerializer(CustomModelSerializer):
     class Meta:
         model = MailboxEntry
         fields = ('is_read', 'label_ids')
+
+
+class MessageReplySerializer(serializers.Serializer):
+    body = serializers.CharField(allow_blank=False, required=True)
+    reply_all = serializers.BooleanField(required=False, default=False)
+
+    def create(self, validated_data):
+        request = self.context['request']
+        parent = self.context['parent_message']
+
+        recipients = build_reply_recipients(
+            parent,
+            request.user,
+            reply_all=validated_data['reply_all'],
+        )
+        subject = parent.subject
+        if not subject.lower().startswith('re:'):
+            subject = f'Re: {subject}'
+
+        return send_message(
+            sender=request.user,
+            subject=subject,
+            body=validated_data['body'],
+            recipients=recipients,
+            thread=parent.thread,
+            parent=parent,
+        )

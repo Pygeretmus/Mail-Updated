@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
@@ -10,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle, UserRateThrottle
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
-from .models import Label, MailboxEntry
+from .models import Label, MailboxEntry, Message
 from .pagination import StandardPagination
 from .serializers import (
     LabelSerializer,
@@ -18,6 +19,7 @@ from .serializers import (
     MailboxEntryListSerializer,
     MailboxEntryUpdateSerializer,
     MessageComposeSerializer,
+    MessageReplySerializer,
 )
 
 
@@ -166,3 +168,28 @@ class MailboxViewSet(ReadOnlyModelViewSet):
         entry = self.get_object()
         entry.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class MessageReplyView(GenericAPIView):
+    throttle_classes = (UserRateThrottle, ScopedRateThrottle)
+    throttle_scope = 'compose'
+    serializer_class = MessageReplySerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get_parent_message(self):
+        qs = Message.objects.filter(entries__user=self.request.user)
+        return get_object_or_404(qs, pk=self.kwargs['pk'])
+
+    def post(self, request, *args, **kwargs):
+        parent = self.get_parent_message()
+        serializer = self.get_serializer(
+            data=request.data,
+            context={'request': request, 'parent_message': parent},
+        )
+        serializer.is_valid(raise_exception=True)
+        message = serializer.save()
+        entry = message.entries.get(user=request.user)
+        return Response(
+            MailboxEntryDetailSerializer(entry, context={'request': request}).data,
+            status=status.HTTP_201_CREATED,
+        )

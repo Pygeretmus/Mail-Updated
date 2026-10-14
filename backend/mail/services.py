@@ -1,6 +1,7 @@
 from typing import NamedTuple
 
 from django.db import transaction
+from rest_framework import serializers
 
 from .models import Label, MailboxEntry, Message, Thread
 
@@ -53,3 +54,32 @@ def send_message(*, sender, subject: str, body: str, recipients: dict, thread=No
         ]
     )
     return message
+
+
+def build_reply_recipients(parent_message: Message, replying_user, reply_all: bool = False) -> dict:
+    is_own_message = parent_message.sender_id == replying_user.id
+    sender = parent_message.sender
+    to_users, cc_users = set(), set()
+    if not is_own_message and sender is not None:
+        to_users.add(sender)
+
+    if reply_all or is_own_message:
+        entries = (
+            parent_message.entries.filter(role__in=[MailboxEntry.Role.TO, MailboxEntry.Role.CC])
+            .exclude(user=replying_user)
+            .select_related('user')
+        )
+        for entry in entries:
+            if entry.role == MailboxEntry.Role.TO:
+                to_users.add(entry.user)
+            elif reply_all:
+                cc_users.add(entry.user)
+
+    # Everyone in 'to' may be gone (deleted accounts) while people in 'cc' remain: they become the addressees
+    if not to_users and cc_users:
+        to_users, cc_users = cc_users, set()
+
+    if not to_users:
+        raise serializers.ValidationError('There is nobody to reply to: the recipients accounts no longer exist.')
+
+    return {'to': list(to_users), 'cc': list(cc_users)}
