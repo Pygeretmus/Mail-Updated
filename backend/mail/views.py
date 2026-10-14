@@ -1,6 +1,7 @@
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework import status
+from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
@@ -14,6 +15,7 @@ from .serializers import (
     LabelSerializer,
     MailboxEntryDetailSerializer,
     MailboxEntryListSerializer,
+    MailboxEntryUpdateSerializer,
     MessageComposeSerializer,
 )
 
@@ -80,6 +82,11 @@ class MessageComposeView(GenericAPIView):
     retrieve=extend_schema(
         responses=MailboxEntryDetailSerializer,
     ),
+    update_state=extend_schema(
+        summary='Mark as read, set labels',
+        request=MailboxEntryUpdateSerializer,
+        responses=MailboxEntryDetailSerializer,
+    ),
 )
 class MailboxViewSet(ReadOnlyModelViewSet):
     permission_classes = (IsAuthenticated,)
@@ -110,3 +117,11 @@ class MailboxViewSet(ReadOnlyModelViewSet):
         if self.action == 'list':
             return MailboxEntryListSerializer
         return MailboxEntryDetailSerializer
+
+    @action(detail=True, methods=['patch'])
+    def update_state(self, request, pk=None):
+        entry = self.get_object()
+        serializer = MailboxEntryUpdateSerializer(entry, data=request.data, partial=True, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(MailboxEntryDetailSerializer(entry, context={'request': request}).data)

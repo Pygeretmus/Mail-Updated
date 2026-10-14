@@ -122,3 +122,16 @@ class MailboxEntryListSerializer(CustomModelSerializer):
         model = MailboxEntry
         fields = ('id', 'message', 'role', 'is_read', 'deleted_at', 'labels')
         read_only_fields = ('message', 'role', 'is_read', 'deleted_at')
+
+
+class UserLabelsField(serializers.PrimaryKeyRelatedField):
+    def get_queryset(self):
+        return Label.objects.filter(user=self.context['request'].user)
+
+
+class MailboxEntryUpdateSerializer(CustomModelSerializer):
+    label_ids = UserLabelsField(source='labels', many=True, required=False)
+
+    class Meta:
+        model = MailboxEntry
+        fields = ('is_read', 'label_ids')
