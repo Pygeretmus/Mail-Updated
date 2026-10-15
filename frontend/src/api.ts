@@ -1,3 +1,5 @@
+import { tr } from "./i18n";
+
 const BASE: string = import.meta.env.VITE_API_URL ?? "http://127.0.0.1/api";
 
 export class ApiError extends Error {
@@ -9,7 +11,7 @@ export class ApiError extends Error {
   }
 }
 export const errText = (e: unknown) =>
-  e instanceof ApiError ? e.message : "Request failed.";
+  e instanceof ApiError ? e.message : tr("err_request");
 
 const store = {
   get access() {
@@ -70,9 +72,8 @@ function toError(status: number, data: unknown): ApiError {
       status,
       errors.map((e) => e.message),
     );
-  if (status === 429)
-    return new ApiError(status, ["Too many attempts, try again later."]);
-  return new ApiError(status, ["Something went wrong."]);
+  if (status === 429) return new ApiError(status, [tr("err_throttle")]);
+  return new ApiError(status, [tr("err_generic")]);
 }
 
 interface Opts {
@@ -107,15 +108,15 @@ export async function api<T>(
       if (result === "ok") res = await send();
       else if (result === "rejected") {
         logout();
-        throw new ApiError(401, ["Session expired, please sign in again."]);
+        throw new ApiError(401, [tr("err_session")]);
       } else {
         // Keep the session: the user can simply retry later
-        throw new ApiError(0, ["No connection to the server."]);
+        throw new ApiError(0, [tr("err_network")]);
       }
     }
   } catch (e) {
     if (e instanceof ApiError) throw e;
-    throw new ApiError(0, ["No connection to the server."]);
+    throw new ApiError(0, [tr("err_network")]);
   }
   if (res.status === 204) return undefined as T;
   const data = await res.json().catch(() => null);
