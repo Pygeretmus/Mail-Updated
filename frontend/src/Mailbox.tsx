@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, errText } from "./api";
 import type { Entry, Label, Page } from "./types";
+import Compose from "./Compose";
 import { useI18n } from "./i18n";
 
 const SYSTEM = ["inbox", "starred", "sent", "archive", "spam"] as const;
@@ -19,6 +20,7 @@ export default function Mailbox() {
     message: string;
   } | null>(null);
   const [open, setOpen] = useState<Entry | null>(null);
+  const [composing, setComposing] = useState(false);
   const [tick, setTick] = useState(0);
   const [newLabel, setNewLabel] = useState("");
   const [menu, setMenu] = useState(false);
@@ -114,6 +116,9 @@ export default function Mailbox() {
   return (
     <div className={`app ${open ? "reading" : ""}`}>
       <aside className={menu ? "show" : ""}>
+        <button className="primary" onClick={() => setComposing(true)}>
+          ✎ {t("write")}
+        </button>
         <nav>
           {SYSTEM.map((k) => btn(k, t(k)))}
           {btn("trash", t("trash"))}
@@ -212,6 +217,16 @@ export default function Mailbox() {
           </div>
         )}
       </main>
+
+      {composing && (
+        <Compose
+          onClose={() => setComposing(false)}
+          onSent={() => {
+            setComposing(false);
+            reload();
+          }}
+        />
+      )}
     </div>
   );
 }
