@@ -31,5 +31,5 @@ export default function App() {
         toggleTheme={toggleTheme}
       />
     );
-  return <Mailbox me={me} />;
+  return <Mailbox me={me} theme={theme} toggleTheme={toggleTheme} />;
 }

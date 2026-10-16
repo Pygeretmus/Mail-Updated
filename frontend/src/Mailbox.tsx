@@ -3,17 +3,22 @@ import { api, errText } from "./api";
 import type { Entry, Label, Me, Page } from "./types";
 import Compose from "./Compose";
 import Thread from "./Thread";
+import DeleteAccount from "./DeleteAccount";
 import { useI18n } from "./i18n";
+import AccountMenu from "./AccountMenu";
 
 const SYSTEM = ["inbox", "starred", "sent", "archive", "spam"] as const;
 const PAGE_SIZE = 20;
 
 interface Props {
   me: Me | null;
+  theme: string;
+  toggleTheme: () => void;
 }
 
-export default function Mailbox({ me }: Props) {
+export default function Mailbox({ me, theme, toggleTheme }: Props) {
   const { t, fmt } = useI18n();
+  const [deleting, setDeleting] = useState(false);
   const [labels, setLabels] = useState<Label[]>([]);
   const [folder, setFolder] = useState("inbox");
   const [page, setPage] = useState(1);
@@ -160,6 +165,14 @@ export default function Mailbox({ me }: Props) {
             </button>
           </form>
         </nav>
+        <div className="foot">
+          <AccountMenu
+            me={me}
+            theme={theme}
+            toggleTheme={toggleTheme}
+            onDelete={() => setDeleting(true)}
+          />
+        </div>
       </aside>
 
       <main className="list">
@@ -240,6 +253,8 @@ export default function Mailbox({ me }: Props) {
       ) : (
         <section className="reader empty muted">{t("select_message")}</section>
       )}
+
+      {deleting && <DeleteAccount onClose={() => setDeleting(false)} />}
       {composing && (
         <Compose
           onClose={() => setComposing(false)}
