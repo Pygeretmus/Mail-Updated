@@ -1,13 +1,18 @@
 import { useEffect, useState } from "react";
 import { api, errText } from "./api";
-import type { Entry, Label, Page } from "./types";
+import type { Entry, Label, Me, Page } from "./types";
 import Compose from "./Compose";
+import Thread from "./Thread";
 import { useI18n } from "./i18n";
 
 const SYSTEM = ["inbox", "starred", "sent", "archive", "spam"] as const;
 const PAGE_SIZE = 20;
 
-export default function Mailbox() {
+interface Props {
+  me: Me | null;
+}
+
+export default function Mailbox({ me }: Props) {
   const { t, fmt } = useI18n();
   const [labels, setLabels] = useState<Label[]>([]);
   const [folder, setFolder] = useState("inbox");
@@ -218,6 +223,23 @@ export default function Mailbox() {
         )}
       </main>
 
+      {open ? (
+        <Thread
+          key={open.id}
+          entry={open}
+          me={me}
+          labels={labels}
+          inTrash={folder === "trash"}
+          onClose={() => setOpen(null)}
+          onChanged={(e) => {
+            reload();
+            if (e === null) setOpen(null);
+            else if (e) setOpen(e);
+          }}
+        />
+      ) : (
+        <section className="reader empty muted">{t("select_message")}</section>
+      )}
       {composing && (
         <Compose
           onClose={() => setComposing(false)}

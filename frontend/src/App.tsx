@@ -8,14 +8,19 @@ import Mailbox from "./Mailbox";
 export default function App() {
   const [theme, toggleTheme] = useTheme();
   const [authed, setAuthed] = useState(hasSession());
+  const [me, setMe] = useState<Me | null>(null);
 
   useEffect(() => {
     setLogoutHandler(() => {
       setAuthed(false);
+      setMe(null);
     });
   }, []);
   useEffect(() => {
-    if (authed) api<Me>("/accounts/me/").catch(() => {});
+    if (authed)
+      api<Me>("/accounts/me/")
+        .then(setMe)
+        .catch(() => {});
   }, [authed]);
 
   if (!authed)
@@ -26,5 +31,5 @@ export default function App() {
         toggleTheme={toggleTheme}
       />
     );
-  return <Mailbox />;
+  return <Mailbox me={me} />;
 }
