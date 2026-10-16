@@ -6,6 +6,17 @@ It is a ground-up rewrite of an earlier, simpler version, with a proper data mod
 
 > Mail stays inside the system: every address belongs to a registered user. There is no SMTP.
 
+## Features
+
+- **Compose, reply, reply-all** with `to`, `cc` and `bcc`. BCC is visible only to the sender and is never carried into a reply.
+- **Conversations.** Replies join the original thread; opening a message shows the whole conversation from your own point of view.
+- **Gmail-style labels.** `inbox`, `sent`, `archive`, `spam` and `starred` are system labels; you can add your own. A message can carry several labels, and "archive" is just a label swap.
+- **Trash with recovery.** Deleting is soft; restore it or erase it for good. A scheduled task purges entries that have been in the trash for 30 days.
+- **Per-user state.** Read/unread, labels and trash are tracked per mailbox, so Alice reading a message does not mark it read for Bob.
+- **Accounts.** Register, sign in (JWT), edit profile, change password, delete account. Sensitive actions require the current password.
+- **Client.** Light and dark themes, English and Ukrainian UI, pagination, responsive layout.
+- **Ops-friendly.** Rate limiting, OpenAPI docs, Django admin, CI, and a Compose stack with a migration job, worker and scheduler.
+
 ## Tech stack
 
 | Layer    | Technology                                                                    |
@@ -71,6 +82,40 @@ flowchart LR
 | `DJANGO_SUPERUSER_EMAIL`, `..._PASSWORD`       | Initial admin account                                      |
 | `POSTGRES_PASSWORD`                            | Read by Compose for the database container                 |
 | `VITE_API_URL`                                 | API base URL baked into the client at build time           |
+
+## Architecture
+
+### Data model
+
+One copy of a message, one small row per person who sees it.
+
+```mermaid
+erDiagram
+    User ||--o{ MailboxEntry : "has"
+    User ||--o{ Label : "owns"
+    User |o--o{ Message : "sends"
+    Thread ||--o{ Message : "groups"
+    Message |o--o{ Message : "replies to"
+    Message ||--o{ MailboxEntry : "delivered as"
+    MailboxEntry }o--o{ Label : "tagged with"
+
+    MailboxEntry {
+        string role "sender, to, cc or bcc"
+        bool is_read
+        datetime deleted_at "null = not in trash"
+    }
+    Label {
+        string name "unique per user, case-insensitive"
+        bool is_system
+    }
+```
+
+- **`Message`** holds the subject and body once, however many people receive it.
+- **`MailboxEntry`** is a message as it sits in one user's mailbox: their role, read state, trash state and labels.
+- **`Thread`** groups a conversation so it loads with a single query.
+- **`Label`** covers folders and tags alike. System labels are created with the user and can't be renamed or deleted.
+
+Sending a message to three people therefore writes one `Message` and four `MailboxEntry` rows (sender included), instead of copying the text four times as the first version did. Deleting a user removes their entries but keeps messages that others still hold; orphaned messages and threads are cleaned up by the scheduled task.
 
 ## API overview
 
